@@ -1,0 +1,165 @@
+// Code your design here
+module registers(rt, rs, write_r, write_d, read_data1, read_data2, RegWrite, clk);
+  input[4:0] rt;
+  input[4:0] rs;
+  input[4:0] write_r;
+  input[31:0] write_d;
+  input RegWrite, clk;
+  output reg[31:0] read_data1, read_data2;
+  
+  reg[31:0] registri[0:31];
+  integer i;
+  
+  initial begin
+    for(i = 0; i < 32; i++) begin
+      registri[i] <= 32'd0;
+    end
+  end
+  
+  always @(rt, rs, posedge clk) begin
+  	read_data1 = rt;
+    read_data2 = rs;
+  end
+  
+  always @(negedge clk) begin
+    if (RegWrite)
+      registri[write_r] <= write_d;
+  end
+  
+  
+endmodule
+
+
+module instruction_mem(read_address, instruction);
+  input[31:0] read_address;
+  output reg[31:0] instruction;
+  
+  reg[31:0] memory[0:1023];
+  initial begin
+    $readmemb("instr.txt", memory);
+  end
+  
+  always @* begin
+    instruction = memory[read_address>>2];
+  end
+  
+  
+endmodule
+
+module Control(control_in, regDst, Jump, Branch, MemRead, MemToReg, ALUOp, MemWrite, ALUSrc, RegWrite);
+  
+  input[5:0] control_in;
+  output reg regDst, Jump, Branch, MemRead, MemToReg, ALUSrc, MemWrite, RegWrite;
+  output reg[1:0] ALUOp;
+  
+ always @* begin
+  
+  case(control_in) 
+	
+    6'd0: begin //R type
+    regDst <= 1'b1; Jump <= 1'b0; Branch <= 1'b0; MemRead <= 1'b0; MemToreg <= 1'b0; 		ALUOp <= 2'b00; MemWrite <= 1'b0; ALUSrc <= 1'b0; RegWrite <= 1'b1;
+    end
+    
+    6'b01000: begin //addi
+    regDst <= 1'b0; Jump <= 1'b0; Branch <= 1'b0; MemRead <= 1'b0; MemToreg <= 1'b0; 		ALUOp <= 2'b01; MemWrite <= 0; ALUSrc <= 1; RegWrite <= 1;
+    end
+    
+    6'b000100: begin //brench on equal (beq)
+    regDst <= 1'bx; Jump <= 1'b0; Branch <= 1'b1; MemRead <= 1'b0; MemToreg <= 1'bx;         ALUOp <= 2'b10; MemWrite <= 1'b0; ALUSrc <= 1'b0; RegWrite <= 1'b0;  
+    end
+    
+    6'b000010: begin //Jump
+    regDst <= 1'bx; Jump <= 1'b1; Branch <= 1'bx; MemRead <= 1'b0; MemToreg <= 1'bx;         ALUOp <= 2'bxx; MemWrite <= 1'b0; ALUSrc <= 1'bx; RegWrite <= 1'b0;
+    end
+    
+    6'b100011: begin //lw
+    regDst <= 1'b0; Jump <= 1'b0; Branch <= 1'b0; MemRead <= 1'b1; MemToreg <= 1'b1;         ALUOp <= 2'b01; MemWrite <= 1'b0; ALUSrc <= 1'b1; RegWrite <= 1'b1;
+    end
+    
+    6'b101011: begin
+    regDst <= 1'bx; Jump <= 1'b0; Branch <= 1'b0; MemRead <= 1'b1; MemToreg <= 1'bx;         ALUOp <= 2'b01; MemWrite <= 1'b1; ALUSrc <= 1'b1; RegWrite <= 1'b0;
+    end
+    endcase
+  end
+endmodule
+
+module program_counter(in, out, R, clk);
+  input[31:0] in;
+  input clk, R;
+  output reg[31:0] out;
+  
+  always @(posedge clk or R) begin
+    if(R)
+      out <= 32'd0;
+    else
+      in <= out;
+  end
+endmodule
+
+module shift_left(in, out);
+  input[31:0] in;
+  output reg[31:0] out;
+  
+  always @*
+    out = in << 2;
+endmodule
+
+module shift_left_26_28(ins, outs);
+  input[25:0] ins;
+  output reg[27:0] outs;
+  
+  always @* begin
+    outs <= {ins, 2'b00};
+  end
+endmodule
+  
+module ALUControl(instruction, ALUOp, ALU_out);
+  input[4:0] instruction;
+  input[1:0] ALUOp;
+  output reg[2:0] ALU_out;
+  
+  always @* begin
+    case(ALUOp) 
+      2'b00:
+        case(instruction) 
+          6'b100000: ALU_out <= 3'b000;
+          6'b100010: ALU_out <= 3'b001;
+          6'b100100: ALU_out <= 3'b010;
+          6'b100101: ALU_out <= 3'b011;
+          6'b100111: ALU_out <= 3'b100;
+          default: ALU_out <= 3'bxxx;
+        endcase
+      2'b01:ALU_out <= 3'b000;
+      2'b10:ALU_out <= 3'b001;
+    endcase 
+  end
+endmodule
+
+module ALU(x, y, alu_control, alu_out);
+  
+  input[31:0] x, y;
+  input[2:0] alu_control;
+  output reg[31:0] alu_out;
+  
+  always @* begin
+    case(alu_control)
+      3'b000: alu_out = x + y;
+      3'b001: alu_out = x - y;
+      3'b010: alu_out = x & y;
+      3'b011: alu_out = x | y;
+      3'b100: alu_out = ~(x | y);
+      endcase
+  end
+endmodule
+
+module DataMemory(alu_result, rd2, mem_read, read_data);
+  input[31:0] alu_result, rd2;
+  input mem_read;
+  output reg[31:0] read_data;
+  
+endmodule
+  
+  
+  
+                 
+              
