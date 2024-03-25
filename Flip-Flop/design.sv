@@ -1,4 +1,5 @@
 // Code your design here
+//D Type Flip-Flop
 module d_ff (
     input clk,     // Semnalul de ceas
     input reset,   // Reset asincron
