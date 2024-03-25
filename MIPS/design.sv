@@ -40,8 +40,6 @@ module instruction_mem(read_address, instruction);
   always @* begin
     instruction = memory[read_address>>2];
   end
-  
-  
 endmodule
 
 module Control(control_in, regDst, Jump, Branch, MemRead, MemToReg, ALUOp, MemWrite, ALUSrc, RegWrite);
@@ -55,27 +53,27 @@ module Control(control_in, regDst, Jump, Branch, MemRead, MemToReg, ALUOp, MemWr
   case(control_in) 
 	
     6'd0: begin //R type
-    regDst <= 1'b1; Jump <= 1'b0; Branch <= 1'b0; MemRead <= 1'b0; MemToreg <= 1'b0; 		ALUOp <= 2'b00; MemWrite <= 1'b0; ALUSrc <= 1'b0; RegWrite <= 1'b1;
+    regDst <= 1'b1; Jump <= 1'b0; Branch <= 1'b0; MemRead <= 1'b0; MemToReg <= 1'b0; 		ALUOp <= 2'b00; MemWrite <= 1'b0; ALUSrc <= 1'b0; RegWrite <= 1'b1;
     end
     
     6'b01000: begin //addi
-    regDst <= 1'b0; Jump <= 1'b0; Branch <= 1'b0; MemRead <= 1'b0; MemToreg <= 1'b0; 		ALUOp <= 2'b01; MemWrite <= 0; ALUSrc <= 1; RegWrite <= 1;
+    regDst <= 1'b0; Jump <= 1'b0; Branch <= 1'b0; MemRead <= 1'b0; MemToReg <= 1'b0; 		ALUOp <= 2'b01; MemWrite <= 0; ALUSrc <= 1; RegWrite <= 1;
     end
     
     6'b000100: begin //brench on equal (beq)
-    regDst <= 1'bx; Jump <= 1'b0; Branch <= 1'b1; MemRead <= 1'b0; MemToreg <= 1'bx;         ALUOp <= 2'b10; MemWrite <= 1'b0; ALUSrc <= 1'b0; RegWrite <= 1'b0;  
+    regDst <= 1'bx; Jump <= 1'b0; Branch <= 1'b1; MemRead <= 1'b0; MemToReg <= 1'bx;         ALUOp <= 2'b10; MemWrite <= 1'b0; ALUSrc <= 1'b0; RegWrite <= 1'b0;  
     end
     
     6'b000010: begin //Jump
-    regDst <= 1'bx; Jump <= 1'b1; Branch <= 1'bx; MemRead <= 1'b0; MemToreg <= 1'bx;         ALUOp <= 2'bxx; MemWrite <= 1'b0; ALUSrc <= 1'bx; RegWrite <= 1'b0;
+    regDst <= 1'bx; Jump <= 1'b1; Branch <= 1'bx; MemRead <= 1'b0; MemToReg <= 1'bx;         ALUOp <= 2'bxx; MemWrite <= 1'b0; ALUSrc <= 1'bx; RegWrite <= 1'b0;
     end
     
     6'b100011: begin //lw
-    regDst <= 1'b0; Jump <= 1'b0; Branch <= 1'b0; MemRead <= 1'b1; MemToreg <= 1'b1;         ALUOp <= 2'b01; MemWrite <= 1'b0; ALUSrc <= 1'b1; RegWrite <= 1'b1;
+    regDst <= 1'b0; Jump <= 1'b0; Branch <= 1'b0; MemRead <= 1'b1; MemToReg <= 1'b1;         ALUOp <= 2'b01; MemWrite <= 1'b0; ALUSrc <= 1'b1; RegWrite <= 1'b1;
     end
     
     6'b101011: begin
-    regDst <= 1'bx; Jump <= 1'b0; Branch <= 1'b0; MemRead <= 1'b1; MemToreg <= 1'bx;         ALUOp <= 2'b01; MemWrite <= 1'b1; ALUSrc <= 1'b1; RegWrite <= 1'b0;
+    regDst <= 1'bx; Jump <= 1'b0; Branch <= 1'b0; MemRead <= 1'b1; MemToReg <= 1'bx;         ALUOp <= 2'b01; MemWrite <= 1'b1; ALUSrc <= 1'b1; RegWrite <= 1'b0;
     end
     endcase
   end
@@ -90,7 +88,7 @@ module program_counter(in, out, R, clk);
     if(R)
       out <= 32'd0;
     else
-      in <= out;
+      out <= in;
   end
 endmodule
 
@@ -165,8 +163,7 @@ module DataMemory(alu_result, rd2, mem_read, mem_write, read_data, clk);
     read_data <= memory[alu_result[31:2]];
   
   if (mem_write)
-    rd2 <= memory[alu_result[31:2]];
-    
+    memory[alu_result[31:2]] <= rd2;
   end
 endmodule
                
@@ -234,7 +231,7 @@ module signExtend(in, out);
   output reg[31:0] out;
   
   always @* begin
-    out = in;
+    out <= in;
   end
   
 endmodule
@@ -267,7 +264,7 @@ endmodule
 module MIPS(clk, R, pc_out, adder_out, instr_mem_out, RegDst_out, jump_out, branch_out, MemRead_out, MemtoReg_out, ALUOp_out, MemWrite_out, ALUSrc_out, RegWrite_out, mux_register_out, mux_alu_out, mux_writeData_out, mux_mux_out, muxPC_out, shift_mux_out, shift_adder_out, ALU_control_out, rd1_out, rd2_out, signExtend_out, aluData_out, aluBranch_out, zero_out, gate_out, readData_out);
   
   inout[31:0] pc_out, adder_out,instr_mem_out, rd1_out, rd2_out, signExtend_out, mux_alu_out, aluData_out, mux_writeData_out, shift_adder_out, aluBranch_out, readData_out, mux_mux_out, muxPC_out;
-  inout RegDst_out, jump_out, branch_out, MemRead_out, MemtoReg_out, MemWrite_out, ALUSrc_out, RegWrite_out, gate_out;
+  inout RegDst_out, jump_out, branch_out, MemRead_out, MemtoReg_out, MemWrite_out, ALUSrc_out, RegWrite_out, gate_out, zero_out;
   inout[4:0] mux_register_out;
   inout[27:0] shift_mux_out;
   inout[1:0] ALUOp_out;
@@ -275,18 +272,18 @@ module MIPS(clk, R, pc_out, adder_out, instr_mem_out, RegDst_out, jump_out, bran
   input clk, R;
   
   
-  registers registri(.rs(instr_mem_out[25:21]), .rt(instr_mem_out[20:16]), .write_r(mux_register_out), .write_d(mux_writeData_out), ,read_data1(rd1_out),
+  registers registri(.rs(instr_mem_out[25:21]), .rt(instr_mem_out[20:16]), .write_r(mux_register_out), .write_d(mux_writeData_out), .read_data1(rd1_out),
 .read_data2(rd2_out), .RegWrite(RegWrite_out), .clk(clk));
                  
   instruction_mem Instruction_Memory(.read_address(pc_out), .instruction(instr_mem_out));
                  
-  Control modControl(.control_in(instr_mem_out[31:26], .regDst(RegDst_out), .Jump(jump_out), .Branch(branch_out), .MemRead(MemRead_out),.MemToReg(MemtoReg_out), .ALUOp(ALUOp_out), .MemWrite(MemWrite_out), .ALUSrc(ALUSrc_out), .RegWrite(RegWrite_out);
+  Control modControl(.control_in(instr_mem_out[31:26]), .regDst(RegDst_out), .Jump(jump_out), .Branch(branch_out), .MemRead(MemRead_out),.MemToReg(MemtoReg_out), .ALUOp(ALUOp_out), .MemWrite(MemWrite_out), .ALUSrc(ALUSrc_out), .RegWrite(RegWrite_out));
   
   program_counter PC(.in(muxPC_out), .out(pc_out), .R(R), .clk(clk));
                                  
-  shift_left shift2left(.in(signExtent_out), .out(shift_adder_out));  
+  shift_left shift2left(.in(signExtend_out), .out(shift_adder_out));  
                                  
-  shift_left_26_28 shift26_28left(.ins(instr_mem_out[25:0], .outs(shift_mux_out));
+  shift_left_26_28 shift26_28left(.ins(instr_mem_out[25:0]), .outs(shift_mux_out));
                    
   ALUControl aluControl(.instruction(instr_mem_out[5:0]), .ALUOp(ALUOp_out), .ALU_out(ALU_control_out));
                    
@@ -294,7 +291,7 @@ module MIPS(clk, R, pc_out, adder_out, instr_mem_out, RegDst_out, jump_out, bran
                    
   DataMemory MemoryData(.alu_result(aluData_out), .rd2(rd2_out), .mem_read(MemRead_out), .mem_write(MemWrite_out), .read_data(readData_out), .clk(clk));
                    
-  mux_32 multiplexor_branch(.x(aluBranch_out), .y(adder_out), .S(zero_out and branch_out), .out(mux_mux_out));
+  mux_32 multiplexor_branch(.x(aluBranch_out), .y(adder_out), .S(zero_out && branch_out), .out(mux_mux_out));
                                   
   mux_32 multiplexor_PC(.x({shift_mux_out, adder_out[31:28]}), .y(mux_mux_out), .S(jump_out), .out(muxPC_out));
                                   
@@ -308,7 +305,7 @@ module MIPS(clk, R, pc_out, adder_out, instr_mem_out, RegDst_out, jump_out, bran
                          
   adderCounter adderProgramCounter(.pc_out(pc_out), .out(adder_out));
                          
-  adder(.in1(adder_out), .in2(shift_adder_out), .out(aluBranch_out));                                                                                                                                           
+  adder adder2var_out(.in1(adder_out), .in2(shift_adder_out), .out(aluBranch_out));                                                                                                                                           
 endmodule
   
                  
