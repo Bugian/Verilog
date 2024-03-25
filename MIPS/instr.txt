@@ -1,0 +1,6 @@
+00000000000000000000000000000000 // Instruction NOP (no operation)
+00100001001000110000000000001000 // Instruction ADDI: rt = rs + 8
+00010001001000110000000000001000 // Instruction BEQ: jump to address pc+8 if rs and rt are equal
+00001000000000000000000000000000 // Instruction JUMP: jump to addres 0
+10001101001000110000000000000000 // Instruction LW: load value from addres rs+8 in rt
+10101101001000110000000000000000 // Instruction SW: store the value from rt to addres rs+8
