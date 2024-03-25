@@ -1,8 +1,6 @@
 // Code your design here
-module registers(rt, rs, write_r, write_d, read_data1, read_data2, RegWrite, clk);
-  input[4:0] rt;
-  input[4:0] rs;
-  input[4:0] write_r;
+module registers(rs, rt, write_r, write_d, read_data1, read_data2, RegWrite, clk);
+  input[4:0] rs, rt, write_r;
   input[31:0] write_d;
   input RegWrite, clk;
   output reg[31:0] read_data1, read_data2;
@@ -11,14 +9,14 @@ module registers(rt, rs, write_r, write_d, read_data1, read_data2, RegWrite, clk
   integer i;
   
   initial begin
-    for(i = 0; i < 32; i++) begin
+    for(i = 0; i < 32; i = i + 1) begin
       registri[i] <= 32'd0;
     end
   end
   
-  always @(rt, rs, posedge clk) begin
-  	read_data1 = rt;
-    read_data2 = rs;
+  always @(rt, rs,posedge clk) begin
+  	read_data1 = rs;
+    read_data2 = rt;
   end
   
   always @(negedge clk) begin
@@ -122,11 +120,11 @@ module ALUControl(instruction, ALUOp, ALU_out);
     case(ALUOp) 
       2'b00:
         case(instruction) 
-          6'b100000: ALU_out <= 3'b000;
-          6'b100010: ALU_out <= 3'b001;
-          6'b100100: ALU_out <= 3'b010;
-          6'b100101: ALU_out <= 3'b011;
-          6'b100111: ALU_out <= 3'b100;
+          6'b100000: ALU_out <= 3'b000; //add
+          6'b100010: ALU_out <= 3'b001; //subtract
+          6'b100100: ALU_out <= 3'b010; //and
+          6'b100101: ALU_out <= 3'b011; //or
+          6'b100111: ALU_out <= 3'b100; //nor
           default: ALU_out <= 3'bxxx;
         endcase
       2'b01:ALU_out <= 3'b000;
@@ -135,31 +133,183 @@ module ALUControl(instruction, ALUOp, ALU_out);
   end
 endmodule
 
-module ALU(x, y, alu_control, alu_out);
+module ALU(x, y, alu_control, alu_out, zero_out);
   
   input[31:0] x, y;
   input[2:0] alu_control;
+  output reg zero_out;
   output reg[31:0] alu_out;
   
   always @* begin
     case(alu_control)
-      3'b000: alu_out = x + y;
-      3'b001: alu_out = x - y;
-      3'b010: alu_out = x & y;
-      3'b011: alu_out = x | y;
-      3'b100: alu_out = ~(x | y);
+      3'b000: zero_out = 1; 
+      3'b001: alu_out = x + y;
+      3'b010: alu_out = x - y;
+      3'b011: alu_out = x & y;
+      3'b100: alu_out = x | y;
+      3'b101: alu_out = ~(x | y);
       endcase
   end
 endmodule
 
-module DataMemory(alu_result, rd2, mem_read, read_data);
+module DataMemory(alu_result, rd2, mem_read, mem_write, read_data, clk);
   input[31:0] alu_result, rd2;
-  input mem_read;
+  input mem_read, mem_write, clk;
   output reg[31:0] read_data;
+  
+  reg[31:0] memory[127:0];
+  
+  always @(negedge clk) begin
+    
+  if(mem_read)
+    read_data <= memory[alu_result[31:2]];
+  
+  if (mem_write)
+    rd2 <= memory[alu_result[31:2]];
+    
+  end
+endmodule
+               
+module mux_32(x, y, S, out);
+
+  input[31:0] x, y;
+  input S;
+  output reg[31:0] out;
+  
+  always @* begin
+    
+    if(S)
+      out = x;
+    else
+      out = y;
+  end
+  
+  
+endmodule
+               
+module mux_5(x, y, S, out);
+
+  input[4:0] x, y;
+  input S;
+  output reg[4:0] out;
+  
+  always @* begin
+    
+    if(S)
+      out = x;
+    else
+      out = y;
+  end
+  
   
 endmodule
   
+module shift_left2(in, out);
+  input[31:0] in;
+  output reg[31:0] out;
   
+  always @* begin
+  
+    out = in<<2;
+    
+  end
+  
+endmodule
+               
+module shift_left26_28(in, out);
+  input[25:0] in;
+  output reg[27:0] out;
+  
+  always @* begin
+  
+    out = in<<2;
+    
+  end
+  
+endmodule
+               
+module signExtend(in, out);
+  
+  input[15:0] in;
+  output reg[31:0] out;
+  
+  always @* begin
+    out = in;
+  end
+  
+endmodule
+               
+module adderCounter(pc_out, out);
+  
+  input[31:0] pc_out;
+  output reg[31:0] out;
+  
+  always @* begin
+    out = pc_out + 4;
+    
+  end
+  
+endmodule
+               
+module adder(in1, in2, out);
+  
+  input[31:0] in1, in2;
+  output reg[31:0] out;
+  
+  always @* begin
+    out = in1 + in2;
+    
+  end
+  
+endmodule
+                 
+                 
+module MIPS(clk, R, pc_out, adder_out, instr_mem_out, RegDst_out, jump_out, branch_out, MemRead_out, MemtoReg_out, ALUOp_out, MemWrite_out, ALUSrc_out, RegWrite_out, mux_register_out, mux_alu_out, mux_writeData_out, mux_mux_out, muxPC_out, shift_mux_out, shift_adder_out, ALU_control_out, rd1_out, rd2_out, signExtend_out, aluData_out, aluBranch_out, zero_out, gate_out, readData_out);
+  
+  inout[31:0] pc_out, adder_out,instr_mem_out, rd1_out, rd2_out, signExtend_out, mux_alu_out, aluData_out, mux_writeData_out, shift_adder_out, aluBranch_out, readData_out, mux_mux_out, muxPC_out;
+  inout RegDst_out, jump_out, branch_out, MemRead_out, MemtoReg_out, MemWrite_out, ALUSrc_out, RegWrite_out, gate_out;
+  inout[4:0] mux_register_out;
+  inout[27:0] shift_mux_out;
+  inout[1:0] ALUOp_out;
+  inout[2:0] ALU_control_out;
+  input clk, R;
+  
+  
+  registers registri(.rs(instr_mem_out[25:21]), .rt(instr_mem_out[20:16]), .write_r(mux_register_out), .write_d(mux_writeData_out), ,read_data1(rd1_out),
+.read_data2(rd2_out), .RegWrite(RegWrite_out), .clk(clk));
+                 
+  instruction_mem Instruction_Memory(.read_address(pc_out), .instruction(instr_mem_out));
+                 
+  Control modControl(.control_in(instr_mem_out[31:26], .regDst(RegDst_out), .Jump(jump_out), .Branch(branch_out), .MemRead(MemRead_out),.MemToReg(MemtoReg_out), .ALUOp(ALUOp_out), .MemWrite(MemWrite_out), .ALUSrc(ALUSrc_out), .RegWrite(RegWrite_out);
+  
+  program_counter PC(.in(muxPC_out), .out(pc_out), .R(R), .clk(clk));
+                                 
+  shift_left shift2left(.in(signExtent_out), .out(shift_adder_out));  
+                                 
+  shift_left_26_28 shift26_28left(.ins(instr_mem_out[25:0], .outs(shift_mux_out));
+                   
+  ALUControl aluControl(.instruction(instr_mem_out[5:0]), .ALUOp(ALUOp_out), .ALU_out(ALU_control_out));
+                   
+  ALU alu(.x(rd1_out), .y(rd2_out), .alu_control(ALU_control_out), .alu_out(aluData_out), .zero_out(zero_out));
+                   
+  DataMemory MemoryData(.alu_result(aluData_out), .rd2(rd2_out), .mem_read(MemRead_out), .mem_write(MemWrite_out), .read_data(readData_out), .clk(clk));
+                   
+  mux_32 multiplexor_branch(.x(aluBranch_out), .y(adder_out), .S(zero_out and branch_out), .out(mux_mux_out));
+                                  
+  mux_32 multiplexor_PC(.x({shift_mux_out, adder_out[31:28]}), .y(mux_mux_out), .S(jump_out), .out(muxPC_out));
+                                  
+  mux_32 multiplexor_ALU(.x(signExtend_out), .y(rd2_out), .S(ALUSrc_out), .out(mux_alu_out));
+                             
+  mux_32 multiplexor_DataMemory(.x(readData_out), .y(aluData_out), .S(MemtoReg_out), .out(mux_writeData_out));
+                                  
+  mux_5 multiplexor_5(.x(instr_mem_out[20:16]), .y(instr_mem_out[15:11]), .S(RegDst_out), .out(mux_register_out));
+                         
+  signExtend sign16_32extend(.in(instr_mem_out[15:0]), .out(signExtend_out));  
+                         
+  adderCounter adderProgramCounter(.pc_out(pc_out), .out(adder_out));
+                         
+  adder(.in1(adder_out), .in2(shift_adder_out), .out(aluBranch_out));                                                                                                                                           
+endmodule
   
                  
               
